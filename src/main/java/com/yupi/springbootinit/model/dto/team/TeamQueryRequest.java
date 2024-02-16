@@ -12,12 +12,18 @@ import java.util.List;
  *
  */
 @Data
-@EqualsAndHashCode(callSuper = true)
-public class TeamQueryRequest extends PageRequest implements Serializable {
+//@EqualsAndHashCode(callSuper = true)
+public class TeamQueryRequest implements Serializable {
     /**
      * 队伍id
      */
     private Long id;
+
+    /**
+     * 搜索词
+     */
+    private String searchText;
+
     /**
      * 队伍名称
      */
@@ -32,6 +38,25 @@ public class TeamQueryRequest extends PageRequest implements Serializable {
      * 最大人数
      */
     private Integer maxNum;
+
+    /**
+     * 用户id（队长 id）
+     */
+    private Long userId;
+
+    /**
+     * 0 - 公开，1 - 私有，2 - 加密
+     */
+    private Integer status;
+    /**
+     * 当前页号
+     */
+    private int current = 1;
+
+    /**
+     * 页面大小
+     */
+    private int pageSize = 10;
 
     private static final long serialVersionUID = 1L;
 }

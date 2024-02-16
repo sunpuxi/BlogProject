@@ -1,8 +1,14 @@
 package com.yupi.springbootinit.service;
 
+import com.yupi.springbootinit.model.dto.team.TeamQueryRequest;
 import com.yupi.springbootinit.model.entity.Team;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.yupi.springbootinit.model.entity.User;
+import com.yupi.springbootinit.model.vo.TeamUserVO;
+import com.yupi.springbootinit.model.vo.TeamVO;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
 * @author Administrator
@@ -17,4 +23,11 @@ public interface TeamService extends IService<Team> {
      * @return
      */
     long addTeam(Team team, User loginUser);
+
+    /**
+     * 获取队伍的详细信息
+     * @param teamQueryRequest
+     * @return
+     */
+    List<TeamUserVO> listTeams(TeamQueryRequest teamQueryRequest, HttpServletRequest request);
 }

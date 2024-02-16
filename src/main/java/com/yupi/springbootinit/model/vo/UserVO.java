@@ -35,7 +35,17 @@ public class UserVO implements Serializable {
     /**
      * 用户角色：user/admin/ban
      */
-    private String userRole;
+    //private String userRole;
+
+    /**
+     * 用户邮箱
+      */
+    private String email;
+
+    /**
+     * 手机号
+     */
+    private String phone;
 
     /**
      * 创建时间

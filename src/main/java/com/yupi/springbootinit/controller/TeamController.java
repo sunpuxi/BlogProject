@@ -12,6 +12,7 @@ import com.yupi.springbootinit.model.dto.team.TeamQueryRequest;
 import com.yupi.springbootinit.model.dto.team.TeamUpdateRequest;
 import com.yupi.springbootinit.model.entity.Team;
 import com.yupi.springbootinit.model.entity.User;
+import com.yupi.springbootinit.model.vo.TeamUserVO;
 import com.yupi.springbootinit.model.vo.TeamVO;
 import com.yupi.springbootinit.service.TeamService;
 import com.yupi.springbootinit.service.UserService;
@@ -111,27 +112,17 @@ public class TeamController {
         return ResultUtils.success(teamVO);
     }
 
+
     /**
-     * 查询全量信息
+     * 获取队伍信息
      * @param teamQueryRequest
      * @return
      */
-    @PostMapping("/list")
-    public BaseResponse<List<TeamVO>> ListTeam(@RequestBody TeamQueryRequest teamQueryRequest){
+    @GetMapping("/list")
+    public BaseResponse<List<TeamUserVO>> ListTeams(TeamQueryRequest teamQueryRequest,HttpServletRequest request){
         ThrowUtils.throwIf(teamQueryRequest==null,ErrorCode.PARAMS_ERROR);
-        Team team = new Team();
-        BeanUtils.copyProperties(teamQueryRequest,team);
-        QueryWrapper<Team> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("name",team.getName());
-        //queryWrapper.eq("description",team.getDescription());
-        List<Team> list = teamService.list(queryWrapper);
-        List<TeamVO> result = new ArrayList<>();
-        for (Team team1 : list) {
-            TeamVO res = new TeamVO();
-            BeanUtils.copyProperties(team1,res);
-            result.add(res);
-        }
-        return ResultUtils.success(result);
+        List<TeamUserVO> teamList = teamService.listTeams(teamQueryRequest,request);
+        return ResultUtils.success(teamList);
     }
 
     /**
