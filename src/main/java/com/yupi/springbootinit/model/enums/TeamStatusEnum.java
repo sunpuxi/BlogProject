@@ -3,8 +3,6 @@ package com.yupi.springbootinit.model.enums;
 /**
  * 队伍状态枚举
  *
- * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
- * @from <a href="https://yupi.icu">编程导航知识星球</a>
  */
 public enum TeamStatusEnum {
 
@@ -16,7 +14,6 @@ public enum TeamStatusEnum {
 
     private String text;
 
-    // 原_创 [鱼_皮](https://github.com/liyupi)
 
     public static TeamStatusEnum getEnumByValue(Integer value) {
         if (value == null) {

@@ -15,7 +15,6 @@ import java.util.Date;
  */
 @Data
 public class TeamUpdateRequest implements Serializable {
-
     /**
      * 队伍id
      */

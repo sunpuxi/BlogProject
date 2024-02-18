@@ -8,6 +8,7 @@ import com.yupi.springbootinit.common.ResultUtils;
 import com.yupi.springbootinit.exception.BusinessException;
 import com.yupi.springbootinit.exception.ThrowUtils;
 import com.yupi.springbootinit.model.dto.team.TeamAddRequest;
+import com.yupi.springbootinit.model.dto.team.TeamJoinRequest;
 import com.yupi.springbootinit.model.dto.team.TeamQueryRequest;
 import com.yupi.springbootinit.model.dto.team.TeamUpdateRequest;
 import com.yupi.springbootinit.model.entity.Team;
@@ -78,16 +79,15 @@ public class TeamController {
     }
 
     /**
-     * 更新
+     * 更新  （仅管理员和队伍的创建人可以修改信息）
      * @param teamUpdateRequest
      * @return
      */
+    // TODO 解决BUG：用户id与队伍创建者的id一致，却报错无权限
     @PostMapping("/update")
-    public BaseResponse<Boolean> updateTeam(@RequestBody TeamUpdateRequest teamUpdateRequest) {
+    public BaseResponse<Boolean> updateTeam(@RequestBody TeamUpdateRequest teamUpdateRequest,HttpServletRequest request) {
         ThrowUtils.throwIf(teamUpdateRequest==null,ErrorCode.PARAMS_ERROR);
-        Team team =teamService.getById(teamUpdateRequest.getId());
-        BeanUtils.copyProperties(teamUpdateRequest,team);
-        boolean b = teamService.updateById(team);
+        boolean b = teamService.updateTeam(teamUpdateRequest,request);
         ThrowUtils.throwIf(!b,ErrorCode.SYSTEM_ERROR);
         return ResultUtils.success(true);
     }
@@ -141,5 +141,17 @@ public class TeamController {
         Page<Team> page = new Page<>(current,pageSize);
         Page<Team> page1 = teamService.page(page, queryWrapper);
         return ResultUtils.success(page1);
+    }
+
+    /**
+     * 用户加入队伍
+     * @return
+     */
+    @PostMapping("/join")
+    public BaseResponse<Boolean> joinTeam(@RequestBody TeamJoinRequest teamJoinRequest,HttpServletRequest request){
+        ThrowUtils.throwIf(teamJoinRequest==null,ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        boolean flag = teamService.joinTeam(teamJoinRequest,loginUser);
+        return ResultUtils.success(true);
     }
 }

@@ -6,22 +6,21 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yupi.springbootinit.common.ErrorCode;
 import com.yupi.springbootinit.exception.BusinessException;
 import com.yupi.springbootinit.exception.ThrowUtils;
+import com.yupi.springbootinit.mapper.TeamMapper;
+import com.yupi.springbootinit.model.dto.team.TeamJoinRequest;
 import com.yupi.springbootinit.model.dto.team.TeamQueryRequest;
+import com.yupi.springbootinit.model.dto.team.TeamUpdateRequest;
 import com.yupi.springbootinit.model.entity.Team;
 import com.yupi.springbootinit.model.entity.User;
 import com.yupi.springbootinit.model.entity.UserTeam;
 import com.yupi.springbootinit.model.enums.TeamStatusEnum;
-import com.yupi.springbootinit.model.vo.LoginUserVO;
 import com.yupi.springbootinit.model.vo.TeamUserVO;
-import com.yupi.springbootinit.model.vo.TeamVO;
 import com.yupi.springbootinit.model.vo.UserVO;
 import com.yupi.springbootinit.service.TeamService;
-import com.yupi.springbootinit.mapper.TeamMapper;
 import com.yupi.springbootinit.service.UserService;
 import com.yupi.springbootinit.service.UserTeamService;
-import org.apache.lucene.util.CollectionUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -39,12 +38,12 @@ import java.util.Optional;
 * @createDate 2024-02-06 20:19:44
 */
 @Service
+@Slf4j
 public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
     implements TeamService{
 
     @Resource
     private UserTeamService userTeamService;
-
     @Resource
     private UserService userService;
 
@@ -199,6 +198,81 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             }
         }
         return res;
+    }
+
+    /**
+     * 更新队伍信息
+     *
+     * @param teamUpdateRequest
+     * @return
+     */
+    @Override
+    public boolean updateTeam(TeamUpdateRequest teamUpdateRequest,HttpServletRequest request) {
+        // 1.参数校验
+        ThrowUtils.throwIf(teamUpdateRequest==null,ErrorCode.PARAMS_ERROR);
+        Long id = teamUpdateRequest.getId();
+        Team byId = this.getById(id);
+        ThrowUtils.throwIf(byId==null,ErrorCode.NOT_FOUND_ERROR);
+        // 2.判断是否为管理员或者队伍创建者
+        User loginUser = userService.getLoginUser(request);
+        Long loginUserId = loginUser.getId();
+        ThrowUtils.throwIf(loginUserId==null,ErrorCode.NOT_LOGIN_ERROR);
+        Long createUserId = byId.getUserId();
+        ThrowUtils.throwIf(!String.valueOf(loginUserId).equals(String.valueOf(createUserId)) && !userService.isAdmin(loginUser),ErrorCode.NO_AUTH_ERROR);
+        //3.如果队伍的状态为加密状态则必须设置密码
+        TeamStatusEnum teamStatusEnum = TeamStatusEnum.getEnumByValue(teamUpdateRequest.getStatus());
+        if (teamStatusEnum.equals(TeamStatusEnum.SECRET)){
+            ThrowUtils.throwIf(teamUpdateRequest.getPassword()==null,ErrorCode.PARAMS_ERROR,"加密队伍需要设置密码！");
+        }
+        // 4.对象属性值拷贝
+        Team team = new Team();
+        BeanUtils.copyProperties(teamUpdateRequest,team);
+        boolean b = this.updateById(team);
+        // 5.向数据库插入信息
+        return b;
+    }
+
+    /**
+     * 用户加入队伍
+     *
+     * @param teamJoinRequest
+     * @return
+     */
+    @Override
+    public boolean joinTeam(TeamJoinRequest teamJoinRequest,User loginUser) {
+        //参数校验
+        ThrowUtils.throwIf(teamJoinRequest==null,ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(loginUser==null,ErrorCode.NOT_LOGIN_ERROR);
+        //加入的队伍一定要存在（包含不能超过过期时间），并且不能超过最大人数
+        Long teamJoinId = teamJoinRequest.getId();
+        ThrowUtils.throwIf(teamJoinId==null||teamJoinId<0,ErrorCode.NOT_FOUND_ERROR);
+        Team TeamById = this.getById(teamJoinId);
+        ThrowUtils.throwIf(TeamById==null,ErrorCode.NOT_FOUND_ERROR,"队伍不存在");
+        //不能加入私有的队伍
+        TeamStatusEnum teamStatusEnum = TeamStatusEnum.getEnumByValue(TeamById.getStatus());
+        ThrowUtils.throwIf(teamStatusEnum.equals(TeamStatusEnum.PRIVATE),ErrorCode.NO_AUTH_ERROR,"不能加入私有的队伍");
+        //加入的队伍的密码需要与当前前端请求的密码匹配
+        ThrowUtils.throwIf(teamJoinRequest.getPassword()==null || !teamJoinRequest.getPassword().equals(TeamById.getPassword()),ErrorCode.PARAMS_ERROR,"密码不匹配!");
+
+        //不能重复加入已经加入过的队伍
+        QueryWrapper<UserTeam> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userId",loginUser.getId());
+        queryWrapper.eq("teamId",teamJoinId);
+        long count = userTeamService.count(queryWrapper);
+        ThrowUtils.throwIf(count>0, ErrorCode.NO_AUTH_ERROR,"不能重复加入队伍");
+        //加入的队伍总数不能超过五个
+        QueryWrapper<UserTeam> queryWrapper1 = new QueryWrapper<>();
+        queryWrapper1.eq("userId",loginUser.getId());
+        long count1 = userTeamService.count(queryWrapper1);
+        ThrowUtils.throwIf(count1>4,ErrorCode.NO_AUTH_ERROR,"不能加入超过五个队伍");
+        //加入数据库
+        UserTeam userTeam = new UserTeam();
+        userTeam.setUserId(loginUser.getId());
+        userTeam.setTeamId(TeamById.getId());
+        userTeam.setJoinTime(new Date());
+        boolean save = userTeamService.save(userTeam);
+        ThrowUtils.throwIf(!save,ErrorCode.SYSTEM_ERROR);
+        return true;
     }
 
 }
