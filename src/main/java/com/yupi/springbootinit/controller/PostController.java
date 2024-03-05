@@ -1,0 +1,114 @@
+package com.yupi.springbootinit.controller;
+
+import com.yupi.springbootinit.common.BaseResponse;
+import com.yupi.springbootinit.common.ErrorCode;
+import com.yupi.springbootinit.common.ResultUtils;
+import com.yupi.springbootinit.exception.ThrowUtils;
+import com.yupi.springbootinit.model.DeleteRequest;
+import com.yupi.springbootinit.model.dto.post.PostAddRequest;
+import com.yupi.springbootinit.model.dto.post.PostUpdateRequest;
+import com.yupi.springbootinit.model.entity.Post;
+import com.yupi.springbootinit.model.entity.User;
+import com.yupi.springbootinit.service.PostService;
+import com.yupi.springbootinit.service.UserService;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.web.bind.annotation.*;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import java.util.List;
+
+@RestController
+@RequestMapping("/post")
+/**
+ * 帖子接口
+ */
+public class PostController {
+
+    @Resource
+    private PostService postService;
+
+    @Resource
+    private UserService userService;
+
+    /**
+     * 添加帖子功能
+     * @param postAddRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/add")
+    public BaseResponse addPost(@RequestBody PostAddRequest postAddRequest, HttpServletRequest request){
+        ThrowUtils.throwIf(postAddRequest == null, ErrorCode.PARAMS_ERROR,"帖子内容不能为空！");
+        ThrowUtils.throwIf(request == null,ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        ThrowUtils.throwIf(loginUser==null,ErrorCode.NOT_LOGIN_ERROR);
+        ThrowUtils.throwIf(loginUser.getId()==null || loginUser.getId()<0,ErrorCode.NOT_LOGIN_ERROR);
+        boolean flag = postService.addPost(postAddRequest,loginUser.getId());
+        ThrowUtils.throwIf(!flag,ErrorCode.OPERATION_ERROR);
+        return ResultUtils.success(true);
+    }
+
+    /**
+     * 更新帖子
+     * @param postUpdateRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/update")
+    public BaseResponse updatePost(@RequestBody PostUpdateRequest postUpdateRequest, HttpServletRequest request){
+        ThrowUtils.throwIf(postUpdateRequest == null,ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(request == null,ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        ThrowUtils.throwIf(loginUser==null,ErrorCode.NOT_LOGIN_ERROR);
+        ThrowUtils.throwIf(loginUser.getId()==null || loginUser.getId()<0,ErrorCode.NOT_LOGIN_ERROR);
+        boolean flag = postService.updatePost(postUpdateRequest,loginUser.getId());
+        ThrowUtils.throwIf(!flag,ErrorCode.OPERATION_ERROR);
+        return ResultUtils.success(true);
+    }
+
+    /**
+     * 删除帖子
+     * @param deleteRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/delete")
+    public BaseResponse deletePost(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request){
+        ThrowUtils.throwIf(deleteRequest == null,ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(deleteRequest.getId() == null,ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(request == null,ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        ThrowUtils.throwIf(loginUser==null,ErrorCode.NOT_LOGIN_ERROR);
+        ThrowUtils.throwIf(loginUser.getId()==null || loginUser.getId()<0,ErrorCode.NOT_LOGIN_ERROR);
+        boolean flag = postService.deletePost(deleteRequest.getId(),loginUser.getId());
+        ThrowUtils.throwIf(!flag,ErrorCode.OPERATION_ERROR);
+        return ResultUtils.success(true);
+    }
+
+
+    /**
+     * 对帖子的全查询
+     * @return
+     */
+    @GetMapping("/list")
+    public BaseResponse<List<Post>> listPost(){
+        List<Post> list = postService.list();
+        return ResultUtils.success(list);
+    }
+
+    /**
+     * 帖子点赞功能
+     * @return
+     */
+    @PostMapping("/thumb")
+    public BaseResponse thumbPost(int postId,HttpServletRequest request){
+        ThrowUtils.throwIf(request == null,ErrorCode.NO_AUTH_ERROR);
+        ThrowUtils.throwIf(postId <0,ErrorCode.NOT_FOUND_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        ThrowUtils.throwIf(loginUser == null||loginUser.getId()<0,ErrorCode.NOT_LOGIN_ERROR);
+        boolean flag = postService.thumbPost(loginUser.getId(),postId);
+        ThrowUtils.throwIf(!flag,ErrorCode.OPERATION_ERROR);
+        return ResultUtils.success(true);
+    }
+}
