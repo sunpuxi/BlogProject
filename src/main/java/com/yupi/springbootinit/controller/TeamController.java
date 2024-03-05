@@ -5,25 +5,24 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.yupi.springbootinit.common.BaseResponse;
 import com.yupi.springbootinit.common.ErrorCode;
 import com.yupi.springbootinit.common.ResultUtils;
-import com.yupi.springbootinit.exception.BusinessException;
 import com.yupi.springbootinit.exception.ThrowUtils;
-import com.yupi.springbootinit.model.dto.team.TeamAddRequest;
-import com.yupi.springbootinit.model.dto.team.TeamJoinRequest;
-import com.yupi.springbootinit.model.dto.team.TeamQueryRequest;
-import com.yupi.springbootinit.model.dto.team.TeamUpdateRequest;
+import com.yupi.springbootinit.model.DeleteRequest;
+import com.yupi.springbootinit.model.dto.team.*;
 import com.yupi.springbootinit.model.entity.Team;
 import com.yupi.springbootinit.model.entity.User;
+import com.yupi.springbootinit.model.entity.UserTeam;
 import com.yupi.springbootinit.model.vo.TeamUserVO;
 import com.yupi.springbootinit.model.vo.TeamVO;
 import com.yupi.springbootinit.service.TeamService;
 import com.yupi.springbootinit.service.UserService;
+import com.yupi.springbootinit.service.UserTeamService;
 import lombok.extern.slf4j.Slf4j;
+import net.bytebuddy.implementation.bytecode.Throw;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -39,6 +38,9 @@ public class TeamController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private UserTeamService UserTeamService;
 
     /**
      * 创建
@@ -67,14 +69,18 @@ public class TeamController {
     }
 
     /**
-     * 删除
+     * 删除,同时删除team表和userTeam表中的信息
      * @return
      */
+
     @PostMapping("/delete")
-    public BaseResponse<Boolean> deleteTeam(long id) {
-        ThrowUtils.throwIf(id<0,ErrorCode.PARAMS_ERROR);
+    public BaseResponse<Boolean> deleteTeam(@RequestBody DeleteRequest deleteRequest) {
+        ThrowUtils.throwIf(deleteRequest == null || deleteRequest.getId() <0,ErrorCode.PARAMS_ERROR);
+        Long id = deleteRequest.getId();
         boolean b = teamService.removeById(id);
         ThrowUtils.throwIf(!b,ErrorCode.SYSTEM_ERROR);
+        boolean flag = UserTeamService.deleteTeams(id);
+        ThrowUtils.throwIf(!flag,ErrorCode.SYSTEM_ERROR);
         return ResultUtils.success(true);
     }
 
@@ -83,7 +89,6 @@ public class TeamController {
      * @param teamUpdateRequest
      * @return
      */
-    // TODO 解决BUG：用户id与队伍创建者的id一致，却报错无权限
     @PostMapping("/update")
     public BaseResponse<Boolean> updateTeam(@RequestBody TeamUpdateRequest teamUpdateRequest,HttpServletRequest request) {
         ThrowUtils.throwIf(teamUpdateRequest==null,ErrorCode.PARAMS_ERROR);
@@ -99,14 +104,10 @@ public class TeamController {
      * @return
      */
     @GetMapping("/get")
-    public BaseResponse<TeamVO> getTeamVOById(long id) {
-        if (id <= 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
+    public BaseResponse<TeamVO> getTeamVOById(Long id) {
+        ThrowUtils.throwIf(id == null || id<0,ErrorCode.PARAMS_ERROR);
         Team team = teamService.getById(id);
-        if (team == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
-        }
+        ThrowUtils.throwIf(team==null,ErrorCode.NOT_FOUND_ERROR);
         TeamVO teamVO = new TeamVO();
         BeanUtils.copyProperties(team,teamVO);
         return ResultUtils.success(teamVO);
@@ -120,8 +121,19 @@ public class TeamController {
      */
     @GetMapping("/list")
     public BaseResponse<List<TeamUserVO>> ListTeams(TeamQueryRequest teamQueryRequest,HttpServletRequest request){
-        ThrowUtils.throwIf(teamQueryRequest==null,ErrorCode.PARAMS_ERROR);
+        // 如果请求参数为空，默认返回所有队伍信息
         List<TeamUserVO> teamList = teamService.listTeams(teamQueryRequest,request);
+        for (TeamUserVO teamUserVO : teamList) {
+            if (request == null)
+                break;
+            QueryWrapper<UserTeam> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("userId",userService.getLoginUser(request).getId());
+            queryWrapper.eq("teamId",teamUserVO.getTeamId());
+            UserTeam one = UserTeamService.getOne(queryWrapper);
+            if (one != null){
+                teamUserVO.setJoin(true);
+            }
+        }
         return ResultUtils.success(teamList);
     }
 
@@ -152,6 +164,83 @@ public class TeamController {
         ThrowUtils.throwIf(teamJoinRequest==null,ErrorCode.PARAMS_ERROR);
         User loginUser = userService.getLoginUser(request);
         boolean flag = teamService.joinTeam(teamJoinRequest,loginUser);
+        ThrowUtils.throwIf(!flag,ErrorCode.OPERATION_ERROR);
         return ResultUtils.success(true);
+    }
+
+    /**
+     * 用户退出队伍
+     * @return
+     */
+    @PostMapping("/quit")
+    public BaseResponse<Boolean> quitTeam(@RequestBody TeamQuitRequest teamQuitRequest,HttpServletRequest request){
+        ThrowUtils.throwIf(teamQuitRequest==null,ErrorCode.PARAMS_ERROR);
+        boolean flag = teamService.quitTeam(teamQuitRequest,request);
+        ThrowUtils.throwIf(!flag,ErrorCode.SYSTEM_ERROR);
+        return ResultUtils.success(true);
+    }
+
+    /**
+     * 获取我创建的队伍
+     * @param
+     * @param request
+     * @return
+     */
+    @GetMapping("/list/my")
+    public BaseResponse<List<TeamUserVO>> ListMyTeams(TeamQueryRequest teamQueryRequest,HttpServletRequest request){
+        User loginUser = userService.getLoginUser(request);
+        long id = loginUser.getId();
+        ThrowUtils.throwIf(loginUser == null || id<0,ErrorCode.NOT_FOUND_ERROR);
+        teamQueryRequest.setUserId(id);
+        List<TeamUserVO> teamUserVOS = teamService.listTeams(teamQueryRequest, request);
+        return ResultUtils.success(teamUserVOS);
+    }
+
+    /**
+     * 获取我创建的队伍
+     * @param
+     * @param request
+     * @return
+     */
+    @GetMapping("/list/myJoin")
+    public BaseResponse<List<TeamUserVO>> ListMyJoinTeams(HttpServletRequest request){
+        ThrowUtils.throwIf(request == null,ErrorCode.NO_AUTH_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        ThrowUtils.throwIf(loginUser == null,ErrorCode.NOT_LOGIN_ERROR);
+        List<TeamUserVO> res = teamService.listMyJoinTeams(loginUser);
+        return ResultUtils.success(res);
+    }
+
+
+    /**
+     * 返回用户还未加入的队伍
+     * @param request
+     * @return
+     */
+    @PostMapping("/isJoin")
+    public BaseResponse<List<TeamUserVO>> UserIsNotJoin(HttpServletRequest request){
+        ThrowUtils.throwIf(request == null,ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        ThrowUtils.throwIf(loginUser == null || loginUser.getId()<0,ErrorCode.NOT_LOGIN_ERROR);
+        List<TeamUserVO> res = teamService.UserIsNotJoin(loginUser.getId());
+        return ResultUtils.success(res);
+    }
+
+
+    /**
+     * true 为已加入队伍
+     * @param request  用于取出当前的登录用户
+     * @param teamId  前端传来的队伍的id
+     * @return
+     */
+    @PostMapping("/hasJoin")
+    public boolean HasJoin(HttpServletRequest request,long teamId){
+        ThrowUtils.throwIf(teamId<0,ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        ThrowUtils.throwIf(loginUser == null,ErrorCode.NOT_LOGIN_ERROR);
+        long userId = loginUser.getId();
+        ThrowUtils.throwIf(userId<0,ErrorCode.OPERATION_ERROR);
+        boolean flag = teamService.hasJoin(userId,teamId);
+        return flag;
     }
 }

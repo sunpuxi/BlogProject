@@ -1,7 +1,9 @@
 package com.yupi.springbootinit.service;
 
+import com.yupi.springbootinit.model.DeleteRequest;
 import com.yupi.springbootinit.model.dto.team.TeamJoinRequest;
 import com.yupi.springbootinit.model.dto.team.TeamQueryRequest;
+import com.yupi.springbootinit.model.dto.team.TeamQuitRequest;
 import com.yupi.springbootinit.model.dto.team.TeamUpdateRequest;
 import com.yupi.springbootinit.model.entity.Team;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -47,4 +49,34 @@ public interface TeamService extends IService<Team> {
      * @return
      */
     boolean joinTeam(TeamJoinRequest teamJoinRequest,User loginUser);
+
+    /**
+     * 退出队伍
+     * @param teamQuitRequest
+     * @param request
+     * @return
+     */
+    boolean quitTeam(TeamQuitRequest teamQuitRequest, HttpServletRequest request);
+
+    /**
+     * 获取我创建的队伍
+     * @param loginUser
+     * @return
+     */
+    List<TeamUserVO> listMyJoinTeams(User loginUser);
+
+    /**
+     * 判断用户是否已经加入队伍
+     * @param
+     * @param
+     * @return
+     */
+    List<TeamUserVO> UserIsNotJoin(long userId);
+
+
+    /**
+     * 判断当前用户是否已经加入该队伍
+     * @return
+     */
+    boolean hasJoin(long userId, long teamId);
 }

@@ -18,6 +18,11 @@ public class TeamUserVO implements Serializable {
     private Long id;
 
     /**
+     * 用户id
+     */
+    private Long teamId;
+
+    /**
      * 队伍名称
      */
     private String name;
@@ -56,16 +61,23 @@ public class TeamUserVO implements Serializable {
     /**
      * 创建时间
      */
+    @JsonFormat(locale="zh", timezone="GMT+8", pattern="yyyy-MM-dd")
     private Date createTime;
 
     /**
      *更新时间
      */
+    @JsonFormat(locale="zh", timezone="GMT+8", pattern="yyyy-MM-dd")
     private Date updateTime;
 
     /**
      * 创建队伍的用户信息
      */
     private UserVO createUser;
+
+    /**
+     * 判断当前登录的用户是否已经加入队伍
+     */
+    private boolean isJoin = false;
 
 }

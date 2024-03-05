@@ -2,7 +2,10 @@ package com.yupi.springbootinit.model.vo;
 
 import java.io.Serializable;
 import java.util.Date;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  * 用户视图（脱敏）
@@ -50,6 +53,7 @@ public class UserVO implements Serializable {
     /**
      * 创建时间
      */
+    @JsonFormat(locale="zh", timezone="GMT+8", pattern="yyyy-MM-dd")
     private Date createTime;
 
     /**

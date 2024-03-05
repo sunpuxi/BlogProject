@@ -1,5 +1,10 @@
 # 公共配置文件
 spring:
+  jackson:
+    #  格式化返回时间 yyyy-MM-dd HH:mm:ss
+    date-format: yyyy-MM-dd
+    time-zone: GMT+8
+
   application:
     name: springboot-init
   # 默认 dev 环境
@@ -92,3 +97,12 @@ knife4j:
         api-rule: package
         api-rule-resources:
           - com.yupi.springbootinit.controller
+
+# gitee第三方登录配置相关
+gitee:
+  clientId: a707acfd6cd432bcd0a6981cc48a0d2efaeab5bb1519392cb07afd7d46354d03
+  clientSecret: 67b45943b360e23e226c29341c18204c760e626ebf590cd98ff5b078e025aca2
+  callback: http://localhost:8101/loginByGitee
+  state: GITEE
+  user:
+    prefix: ${gitee.state}@
