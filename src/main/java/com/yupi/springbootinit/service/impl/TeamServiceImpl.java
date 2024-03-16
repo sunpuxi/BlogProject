@@ -100,7 +100,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "超时时间 > 当前时间");
         }
         // 7. 校验用户最多创建 5 个队伍
-        // TODO 有 bug，可能同时创建 100 个队伍
         QueryWrapper<Team> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("userId", userId);
         long hasTeamNum = this.count(queryWrapper);
@@ -280,21 +279,20 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
     /**
      * 退出队伍
      *
-     * @param teamQuitRequest
+     * @param
      * @param request
      * @return
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean quitTeam(TeamQuitRequest teamQuitRequest, HttpServletRequest request) {
+    public boolean quitTeam(Long id, HttpServletRequest request) {
         //校验参数
-        ThrowUtils.throwIf(teamQuitRequest==null,ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(id==null,ErrorCode.PARAMS_ERROR);
         User loginUser = userService.getLoginUser(request);
         ThrowUtils.throwIf(loginUser==null,ErrorCode.NO_AUTH_ERROR,"未登录");
         ThrowUtils.throwIf(loginUser.getId()==null||loginUser.getId()<0,ErrorCode.NOT_FOUND_ERROR);
         //校验队伍是否已经存在
-        Long teamId = teamQuitRequest.getId();
-        Team teamById = this.getById(teamId);
+        Team teamById = this.getById(id);
         ThrowUtils.throwIf(teamById==null||teamById.getId()<0,ErrorCode.NOT_FOUND_ERROR);
         //校验当前登录用户是否已经加入队伍（这里存疑，前端在展示信息时，没加入的队伍就没有退出功能才对）
         QueryWrapper<UserTeam> queryWrapper = new QueryWrapper<>();
@@ -314,7 +312,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         }else{
             remove = userTeamService.remove(queryWrapper1);
         }
-        boolean b = this.removeById(teamId);
+        boolean b = this.removeById(id);
         ThrowUtils.throwIf(!remove,ErrorCode.SYSTEM_ERROR);
         ThrowUtils.throwIf(!b,ErrorCode.SYSTEM_ERROR);
         return true;

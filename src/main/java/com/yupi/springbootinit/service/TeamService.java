@@ -56,7 +56,7 @@ public interface TeamService extends IService<Team> {
      * @param request
      * @return
      */
-    boolean quitTeam(TeamQuitRequest teamQuitRequest, HttpServletRequest request);
+    boolean quitTeam(Long id, HttpServletRequest request);
 
     /**
      * 获取我创建的队伍

@@ -17,6 +17,6 @@ public class TeamQuitRequest implements Serializable {
     /**
      * 队伍id
      */
-    private Long id;
+    private long id;
     private static final long serialVersionUID = 1L;
 }

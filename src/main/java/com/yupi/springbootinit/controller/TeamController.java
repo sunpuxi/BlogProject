@@ -132,6 +132,8 @@ public class TeamController {
             UserTeam one = UserTeamService.getOne(queryWrapper);
             if (one != null){
                 teamUserVO.setJoin(true);
+            }else{
+                teamUserVO.setJoin(false);
             }
         }
         return ResultUtils.success(teamList);
@@ -173,9 +175,9 @@ public class TeamController {
      * @return
      */
     @PostMapping("/quit")
-    public BaseResponse<Boolean> quitTeam(@RequestBody TeamQuitRequest teamQuitRequest,HttpServletRequest request){
-        ThrowUtils.throwIf(teamQuitRequest==null,ErrorCode.PARAMS_ERROR);
-        boolean flag = teamService.quitTeam(teamQuitRequest,request);
+    public BaseResponse<Boolean> quitTeam(TeamQuitRequest teamQuitRequest,HttpServletRequest request){
+         ThrowUtils.throwIf(teamQuitRequest==null,ErrorCode.PARAMS_ERROR);
+        boolean flag = teamService.quitTeam(teamQuitRequest.getId(),request);
         ThrowUtils.throwIf(!flag,ErrorCode.SYSTEM_ERROR);
         return ResultUtils.success(true);
     }

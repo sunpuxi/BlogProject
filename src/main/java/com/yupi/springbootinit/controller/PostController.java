@@ -7,11 +7,11 @@ import com.yupi.springbootinit.exception.ThrowUtils;
 import com.yupi.springbootinit.model.DeleteRequest;
 import com.yupi.springbootinit.model.dto.post.PostAddRequest;
 import com.yupi.springbootinit.model.dto.post.PostUpdateRequest;
-import com.yupi.springbootinit.model.entity.Post;
+import com.yupi.springbootinit.model.dto.post.PostVo;
 import com.yupi.springbootinit.model.entity.User;
 import com.yupi.springbootinit.service.PostService;
 import com.yupi.springbootinit.service.UserService;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -92,8 +92,8 @@ public class PostController {
      * @return
      */
     @GetMapping("/list")
-    public BaseResponse<List<Post>> listPost(){
-        List<Post> list = postService.list();
+    public BaseResponse<List<PostVo>> listPost(){
+        List<PostVo> list = postService.getPostVo();
         return ResultUtils.success(list);
     }
 
@@ -101,8 +101,8 @@ public class PostController {
      * 帖子点赞功能
      * @return
      */
-    @PostMapping("/thumb")
-    public BaseResponse thumbPost(int postId,HttpServletRequest request){
+    @GetMapping("/thumb")
+    public BaseResponse thumbPost(Long postId,HttpServletRequest request){
         ThrowUtils.throwIf(request == null,ErrorCode.NO_AUTH_ERROR);
         ThrowUtils.throwIf(postId <0,ErrorCode.NOT_FOUND_ERROR);
         User loginUser = userService.getLoginUser(request);
@@ -110,5 +110,17 @@ public class PostController {
         boolean flag = postService.thumbPost(loginUser.getId(),postId);
         ThrowUtils.throwIf(!flag,ErrorCode.OPERATION_ERROR);
         return ResultUtils.success(true);
+    }
+
+    /**
+     * 根据帖子内容搜索帖子
+     * @param content
+     * @return
+     */
+    @GetMapping("/search")
+    public BaseResponse<List<PostVo>> searchPost(String content){
+        ThrowUtils.throwIf(StringUtils.isBlank(content),ErrorCode.PARAMS_ERROR,"搜索内容不能为空");
+        List<PostVo> postList = postService.searchPost(content);
+        return ResultUtils.success(postList);
     }
 }

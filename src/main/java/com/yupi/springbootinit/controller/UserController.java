@@ -18,6 +18,8 @@ import com.yupi.springbootinit.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.boot.configurationprocessor.json.JSONArray;
+import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.util.CollectionUtils;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -161,6 +164,7 @@ public class UserController {
      * @return
      */
     @GetMapping("/recommend")
+    // todo 解决数据库与Redis的双写一致性的问题
     public BaseResponse<Page<UserVO>> recommendUsers(long pageSize,long pageNum){
         //查缓存，如果缓存中存在数据，则将数据直接返回，不存在则查数据库
         ValueOperations valueOperations = redisTemplate.opsForValue();
@@ -290,23 +294,41 @@ public class UserController {
 
     /**
      * 更新个人信息
-     *
+     *使用延迟双删策略，用户更新之后判断用户是否在推荐用户的列表中，不存在则不需要更新缓存
+     * 如果存在，则先删除缓存，在更新数据库，然后隔几秒再次删除缓存
      * @param userUpdateMyRequest
      * @param request
      * @return
      */
     @PostMapping("/update/my")
     public BaseResponse<Boolean> updateMyUser(@RequestBody UserUpdateMyRequest userUpdateMyRequest,
-            HttpServletRequest request) {
+            HttpServletRequest request) throws JSONException {
         //封装前端的更新请求参数，再获取当前登录的用户信息，将更新后的信息拷贝至登录的用户信息中，此时还需要手动设置id，应为id时自动生成的
         if (userUpdateMyRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+        //参数校验，标签的长度不能过长
+        ThrowUtils.throwIf(StringUtils.isNotBlank(userUpdateMyRequest.getTags()) && userUpdateMyRequest.getTags().length()>32,ErrorCode.PARAMS_ERROR,"标签过长");
+        //从更新请求中取出tags字符串，并将其按照逗号进行切割，然后再拼接成["string","a"]的形式
+        if (userUpdateMyRequest.getTags()!=null){
+            String[] split = userUpdateMyRequest.getTags().split(",");
+            JSONArray jsonArray = new JSONArray(split);
+            String result = jsonArray.toString();
+            userUpdateMyRequest.setTags(result);
+        }
+        String cacheKey = "find:user:%s";  // Redis 中的用户缓存信息的key
+        redisTemplate.delete(cacheKey);
         User loginUser = userService.getLoginUser(request);
         User user = new User();
         BeanUtils.copyProperties(userUpdateMyRequest, user);
         user.setId(loginUser.getId());
         boolean result = userService.updateById(user);
+        try {
+            Thread.sleep(3);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        redisTemplate.delete(cacheKey);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return ResultUtils.success(true);
     }
