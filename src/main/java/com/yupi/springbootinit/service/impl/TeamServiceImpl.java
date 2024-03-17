@@ -1,7 +1,7 @@
 package com.yupi.springbootinit.service.impl;
 
-import com.alibaba.excel.util.StringUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yupi.springbootinit.common.ErrorCode;
 import com.yupi.springbootinit.exception.BusinessException;
@@ -9,7 +9,6 @@ import com.yupi.springbootinit.exception.ThrowUtils;
 import com.yupi.springbootinit.mapper.TeamMapper;
 import com.yupi.springbootinit.model.dto.team.TeamJoinRequest;
 import com.yupi.springbootinit.model.dto.team.TeamQueryRequest;
-import com.yupi.springbootinit.model.dto.team.TeamQuitRequest;
 import com.yupi.springbootinit.model.dto.team.TeamUpdateRequest;
 import com.yupi.springbootinit.model.entity.Team;
 import com.yupi.springbootinit.model.entity.User;

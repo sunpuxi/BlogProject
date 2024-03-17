@@ -20,6 +20,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/post")
+@CrossOrigin(origins = {"http://1.12.52.237","www.codefriends.icu"})  //配置跨域
 /**
  * 帖子接口
  */

@@ -2,6 +2,7 @@ package com.yupi.springbootinit.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.google.gson.Gson;
 import com.yupi.springbootinit.annotation.AuthCheck;
 import com.yupi.springbootinit.common.BaseResponse;
 import com.yupi.springbootinit.common.DeleteRequest;
@@ -18,8 +19,6 @@ import com.yupi.springbootinit.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.boot.configurationprocessor.json.JSONArray;
-import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.util.CollectionUtils;
@@ -28,7 +27,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -41,7 +39,7 @@ import static com.yupi.springbootinit.service.impl.UserServiceImpl.SALT;
 @RestController
 @RequestMapping("/user")
 @Slf4j
-@CrossOrigin(origins ="http://localhost:5173")  //配置跨域
+@CrossOrigin(origins = {"http://1.12.52.237","www.codefriends.icu"})  //配置跨域
 public class UserController {
 
     @Resource
@@ -302,7 +300,7 @@ public class UserController {
      */
     @PostMapping("/update/my")
     public BaseResponse<Boolean> updateMyUser(@RequestBody UserUpdateMyRequest userUpdateMyRequest,
-            HttpServletRequest request) throws JSONException {
+            HttpServletRequest request) {
         //封装前端的更新请求参数，再获取当前登录的用户信息，将更新后的信息拷贝至登录的用户信息中，此时还需要手动设置id，应为id时自动生成的
         if (userUpdateMyRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -312,9 +310,9 @@ public class UserController {
         //从更新请求中取出tags字符串，并将其按照逗号进行切割，然后再拼接成["string","a"]的形式
         if (userUpdateMyRequest.getTags()!=null){
             String[] split = userUpdateMyRequest.getTags().split(",");
-            JSONArray jsonArray = new JSONArray(split);
-            String result = jsonArray.toString();
-            userUpdateMyRequest.setTags(result);
+            Gson gson = new Gson();
+            String s = gson.toJson(split);
+            userUpdateMyRequest.setTags(s);
         }
         String cacheKey = "find:user:%s";  // Redis 中的用户缓存信息的key
         redisTemplate.delete(cacheKey);

@@ -17,7 +17,6 @@ import com.yupi.springbootinit.service.TeamService;
 import com.yupi.springbootinit.service.UserService;
 import com.yupi.springbootinit.service.UserTeamService;
 import lombok.extern.slf4j.Slf4j;
-import net.bytebuddy.implementation.bytecode.Throw;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,6 +30,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/team")
 @Slf4j
+@CrossOrigin(origins = {"http://1.12.52.237","www.codefriends.icu"})  //配置跨域
 public class TeamController {
 
     @Resource
