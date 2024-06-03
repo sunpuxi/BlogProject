@@ -1,24 +1,19 @@
 # 公共配置文件
 spring:
   jackson:
-    #  格式化返回时间 yyyy-MM-dd HH:mm:ss
     date-format: yyyy-MM-dd
     time-zone: GMT+8
 
   application:
-    name: springboot-init
-  # 默认 dev 环境
+    name: FindFriends
   profiles:
     active: dev
-  # 支持 swagger3
   mvc:
     pathmatch:
       matching-strategy: ant_path_matcher
 
-  # session 配置
   session:
     store-type: redis
-    # 30 天过期
     timeout: 2592
 
   # 数据库配置
@@ -34,11 +29,6 @@ spring:
     port: 6379
     timeout: 5000
 
-  # 文件上传
-  servlet:
-    multipart:
-      # 大小限制
-      max-file-size: 10MB
 server:
   address: 0.0.0.0
   port: 8101
@@ -48,6 +38,7 @@ server:
     session:
       cookie:
         max-age: 2592000
+        #domain: codefriends.icu
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: false
