@@ -1,4 +1,4 @@
-在线访问地址： http://codefriends.icu
+在线访问地址： http://codefriends.icu，前端 UI 设计为移动端，手机访问体验更佳~
 
 
 项目亮点：
